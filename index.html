@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Peta Rengas Condong &mdash; Muara Bulian, Batang Hari</title>
+<link rel="stylesheet" href="css/leaflet.css" />
+<style>
+  :root{
+    --ink-950:#12201a;
+    --ink-900:#17251e;
+    --panel:#1c2b23;
+    --panel-line: rgba(201,162,39,0.18);
+    --gold:#c9a227;
+    --gold-soft: rgba(201,162,39,0.14);
+    --moss:#6f9b6f;
+    --slate:#4d7690;
+    --clay:#b4623a;
+    --paper:#eee7d6;
+    --paper-dim:#b9b09a;
+    --danger:#c1493a;
+    --line: rgba(238,231,214,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+    background:var(--ink-950);
+    color:var(--paper);
+    overflow:hidden;
+  }
+  #app{
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    height:100vh;
+    width:100vw;
+  }
+  /* ---------- SIDEBAR ---------- */
+  #sidebar{
+    background:
+      linear-gradient(var(--panel-line),var(--panel-line)) 0 0/100% 28px,
+      var(--panel);
+    border-right:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .brand{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand .eyebrow{
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    color:var(--gold);
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .eyebrow::before{
+    content:"";
+    width:6px;height:6px;border-radius:50%;
+    background:var(--gold);
+    box-shadow:0 0 0 3px var(--gold-soft);
+  }
+  .brand h1{
+    font-family: 'Arial Narrow', ui-sans-serif, system-ui, sans-serif; letter-spacing:.01em;
+    font-weight:700;
+    font-size:28px;
+    letter-spacing:.01em;
+    margin:8px 0 2px;
+    line-height:1.05;
+    color:var(--paper);
+  }
+  .brand p{
+    margin:0;
+    font-size:12.5px;
+    color:var(--paper-dim);
+    line-height:1.5;
+  }
+  .gps{
+    padding:12px 20px;
+    border-bottom:1px solid var(--line);
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    font-size:11px;
+    color:var(--paper-dim);
+    display:flex;
+    justify-content:space-between;
+  }
+  .gps b{color:var(--gold); font-weight:500;}
+  #sidebar-scroll{
+    overflow-y:auto;
+    flex:1;
+    min-height:0;
+  }
+  .section{
+    padding:16px 20px;
+    border-bottom:1px solid var(--line);
+  }
+  .section h2{
+    font-family: 'Arial Narrow', ui-sans-serif, system-ui, sans-serif;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:0 0 12px;
+  }
+  .layer-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:6px 0;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .layer-row input{ accent-color: var(--gold); width:14px; height:14px; }
+  .swatch{
+    width:14px;height:14px;border-radius:3px;flex:none;
+    border:1px solid rgba(0,0,0,.25);
+  }
+  .swatch.line{ height:3px; border-radius:2px; border:none; margin-top:5px; align-self:flex-start;}
+  .layer-row .count{
+    margin-left:auto;
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    font-size:10.5px;
+    color:var(--paper-dim);
+  }
+  .subgroup{ margin-left:22px; }
+  .subgroup .layer-row{ font-size:12px; color:var(--paper-dim);}
+
+  #search-box{
+    width:100%;
+    background:var(--ink-900);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size:13px;
+    padding:9px 11px;
+    border-radius:6px;
+    outline:none;
+  }
+  #search-box:focus{ border-color: var(--gold); }
+  #search-results{
+    margin-top:8px;
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .result-item{
+    padding:8px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12.5px;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .result-item:hover{ background: var(--gold-soft); }
+  .result-item .tag{
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    font-size:10px;
+    color:var(--paper-dim);
+    white-space:nowrap;
+  }
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .stat{
+    background:var(--ink-900);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px;
+  }
+  .stat .num{
+    font-family: 'Arial Narrow', ui-sans-serif, system-ui, sans-serif;
+    font-size:24px;
+    font-weight:700;
+    color:var(--gold);
+    line-height:1;
+  }
+  .stat .lbl{
+    font-size:10.5px;
+    color:var(--paper-dim);
+    margin-top:3px;
+  }
+
+  .foot{
+    padding:14px 20px;
+    font-size:10.5px;
+    color:var(--paper-dim);
+    line-height:1.6;
+  }
+  .foot a{ color:var(--gold); text-decoration:none; }
+
+  /* ---------- MAP ---------- */
+  #map{ width:100%; height:100%; background:#0e1712; }
+  .leaflet-popup-content-wrapper{
+    background:var(--panel);
+    color:var(--paper);
+    border-radius:8px;
+    border:1px solid var(--panel-line);
+  }
+  .leaflet-popup-tip{ background:var(--panel); }
+  .leaflet-popup-content{ margin:12px 14px; font-family: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Arial, sans-serif; font-size:12.5px; }
+  .pop-title{
+    font-family: 'Arial Narrow', ui-sans-serif, system-ui, sans-serif;
+    font-size:18px;
+    font-weight:700;
+    color:var(--gold);
+    margin:0 0 6px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .pop-row{ display:flex; gap:8px; padding:3px 0; }
+  .pop-row .k{ color:var(--paper-dim); min-width:110px; font-size:11px; }
+  .pop-row .v{ font-weight:500; }
+  .pop-osm{
+    margin-top:8px; padding-top:6px; border-top:1px solid var(--line);
+    font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Courier New', monospace; font-size:10px; color:var(--paper-dim);
+  }
+  .pop-osm a{ color: var(--slate); }
+
+  .leaflet-control-zoom a{
+    background:var(--panel) !important;
+    color:var(--paper) !important;
+    border-color: var(--line) !important;
+  }
+  .leaflet-control-attribution{
+    background:rgba(18,32,26,0.75) !important;
+    color:var(--paper-dim) !important;
+  }
+  .leaflet-control-attribution a{ color:var(--gold) !important; }
+
+  @media (max-width: 760px){
+    #app{ grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    #sidebar{ max-height:40vh; border-right:none; border-bottom:1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="eyebrow">Survei Spasial &middot; OpenStreetMap</div>
+      <h1>Rengas Condong</h1>
+      <p>Kelurahan Rengas Condong, Muara Bulian, Kabupaten Batang Hari, Jambi. Jaringan jalan dan titik layanan publik dari data OpenStreetMap (HOTOSM Raw Data API).</p>
+    </div>
+    <div class="gps">
+      <span>LAT <b id="gps-lat">&minus;1.6800</b></span>
+      <span>LON <b id="gps-lon">103.2700</b></span>
+      <span>Z <b id="gps-z">15</b></span>
+    </div>
+    <div id="sidebar-scroll">
+      <div class="section">
+        <h2>Cari Lokasi</h2>
+        <input id="search-box" type="text" placeholder="Ketik nama tempat / jalan…" autocomplete="off" />
+        <div id="search-results"></div>
+      </div>
+
+      <div class="section">
+        <h2>Ringkasan Data</h2>
+        <div class="stat-grid">
+          <div class="stat"><div class="num" id="stat-roads">0</div><div class="lbl">Ruas Jalan</div></div>
+          <div class="stat"><div class="num" id="stat-buildings">0</div><div class="lbl">Bangunan / POI</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Layer Peta</h2>
+
+        <div class="layer-row" data-layer="roads">
+          <input type="checkbox" checked />
+          <span class="swatch line" style="background:#c9a227"></span>
+          <span>Jaringan Jalan</span>
+          <span class="count" id="n-roads"></span>
+        </div>
+        <div class="subgroup" id="road-legend"></div>
+
+        <div class="layer-row" data-layer="buildings" style="margin-top:10px;">
+          <input type="checkbox" checked />
+          <span class="swatch" style="background:#b4623a"></span>
+          <span>Bangunan &amp; Fasilitas</span>
+          <span class="count" id="n-buildings"></span>
+        </div>
+        <div class="subgroup" id="building-legend"></div>
+
+        <div class="layer-row" data-layer="points" style="margin-top:10px;">
+          <input type="checkbox" checked />
+          <span class="swatch" style="background:#4d7690;border-radius:50%;"></span>
+          <span>Titik Layanan</span>
+          <span class="count" id="n-points"></span>
+        </div>
+        <div class="subgroup" id="point-legend"></div>
+      </div>
+    </div>
+    <div class="foot">
+      Data: <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>, ODbL 1.0 &middot; diambil via HOTOSM Raw Data API.<br/>
+      Baris atribut kosong (null) pada sumber data disaring dan tidak ditampilkan.
+    </div>
+  </aside>
+  <main id="map"></main>
+</div>
+
+<script src="js/leaflet.js"></script>
+<script src="data/roads.js"></script>
+<script src="data/buildings.js"></script>
+<script src="data/points.js"></script>
+<script>
+/* =========================================================
+   DATA — dibersihkan dari properti bernilai null/kosong,
+   fitur tanpa tag bermakna (amenity/shop/building/highway/...) dibuang.
+   ========================================================= */
+/* DATA_ROADS, DATA_BUILDINGS, DATA_POINTS dimuat dari file data/*.js */
+
+/* =========================================================
+   Kamus label -> Bahasa Indonesia untuk popup
+   ========================================================= */
+var LABELS = {
+  name: "Nama",
+  amenity: "Kategori",
+  shop: "Jenis Toko",
+  building: "Jenis Bangunan",
+  highway: "Jenis Jalan",
+  leisure: "Rekreasi",
+  man_made: "Struktur Buatan",
+  railway: "Jalur Rel",
+  public_transport: "Transportasi Umum",
+  emergency: "Layanan Darurat",
+  operator: "Operator",
+  operator_type: "Tipe Operator",
+  opening_hours: "Jam Operasional",
+  surface: "Permukaan",
+  smoothness: "Kehalusan Jalan",
+  oneway: "Satu Arah",
+  width: "Lebar",
+  bridge: "Jembatan",
+  tunnel: "Terowongan",
+  layer: "Tingkat Layer",
+  access: "Akses",
+  isced_level: "Jenjang Pendidikan",
+  health_facility_type: "Jenis Faskes",
+  health_facility_level: "Tingkat Faskes",
+  health_facility_bed: "Jumlah Tempat Tidur",
+  staff_count_doctors: "Jumlah Dokter",
+  staff_count_nurses: "Jumlah Perawat",
+  toilets_handwashing: "Cuci Tangan",
+  toilets_disposal: "Pembuangan Toilet",
+  communication_radio: "Komunikasi Radio",
+  communication_mobile: "Sinyal Seluler",
+  network: "Jaringan",
+  tower: "Menara",
+  capacity: "Kapasitas",
+  status: "Status",
+  medical_system_western: "Sistem Medis Barat"
+};
+
+var HIGHWAY_LABEL = {
+  trunk: "Jalan Utama (Trunk)",
+  trunk_link: "Jalan Utama (Penghubung)",
+  tertiary: "Jalan Kolektor",
+  residential: "Jalan Permukiman",
+  living_street: "Jalan Lingkungan",
+  service: "Jalan Servis / Akses",
+  path: "Jalur Setapak",
+  track: "Jalur Tanah / Kebun"
+};
+
+var HIGHWAY_STYLE = {
+  trunk:         { color:"#c1493a", weight:5 },
+  trunk_link:    { color:"#c1493a", weight:4 },
+  tertiary:      { color:"#c9a227", weight:3.5 },
+  residential:   { color:"#4d7690", weight:2.6 },
+  living_street: { color:"#6f9b6f", weight:2.2 },
+  service:       { color:"#8a8f86", weight:1.6, dashArray:"3,3" },
+  path:          { color:"#b9b09a", weight:1.4, dashArray:"1,4" },
+  track:         { color:"#8a6a45", weight:1.4, dashArray:"1,4" }
+};
+
+var AMENITY_LABEL = {
+  university: "Kampus / Universitas",
+  hospital: "Rumah Sakit",
+  school: "Sekolah",
+  restaurant: "Rumah Makan",
+  fast_food: "Warung Cepat Saji",
+  atm: "ATM"
+};
+
+var AMENITY_COLOR = {
+  university: "#4d7690",
+  hospital: "#c1493a",
+  school: "#6f9b6f",
+  restaurant: "#c9a227",
+  fast_food: "#b4623a",
+  atm: "#8a8f86"
+};
+
+var AMENITY_ICON = {
+  university: "&#127891;",
+  hospital: "&#128657;",
+  school: "&#127979;",
+  restaurant: "&#127860;",
+  fast_food: "&#127828;",
+  atm: "&#128179;"
+};
+
+function primaryCategory(props){
+  var keys = ['amenity','shop','building','highway','leisure','man_made','railway','public_transport','emergency'];
+  for (var i=0;i<keys.length;i++){
+    if (props[keys[i]]) return { key: keys[i], value: props[keys[i]] };
+  }
+  return null;
+}
+
+function popupHTML(props, titleFallback){
+  var cat = primaryCategory(props);
+  var title = props.name ? props.name : (titleFallback || "(tanpa nama)");
+  var html = '<div class="pop-title">' + escapeHTML(title) + '</div>';
+  var order = ['amenity','shop','building','highway','leisure','man_made','railway','emergency',
+               'operator','operator_type','opening_hours','surface','smoothness','oneway','width',
+               'isced_level','health_facility_type','health_facility_level','health_facility_bed',
+               'staff_count_doctors','staff_count_nurses','capacity','status','access','layer','bridge','tunnel'];
+  order.forEach(function(k){
+    if (props[k] !== undefined && props[k] !== null && props[k] !== "" && k !== 'name'){
+      var val = props[k];
+      if (k === 'highway') val = HIGHWAY_LABEL[val] || val;
+      if (k === 'amenity') val = AMENITY_LABEL[val] || val;
+      html += '<div class="pop-row"><span class="k">' + (LABELS[k]||k) + '</span><span class="v">' + escapeHTML(String(val)) + '</span></div>';
+    }
+  });
+  if (props.osm_id){
+    var kind = (props.osm_type||'').indexOf('poly') > -1 ? 'way' : ((props.osm_type||'').indexOf('line') > -1 ? 'way' : 'node');
+    html += '<div class="pop-osm">OSM ID: <a href="https://www.openstreetmap.org/' + kind + '/' + props.osm_id + '" target="_blank">' + props.osm_id + '</a></div>';
+  }
+  return html;
+}
+
+function escapeHTML(s){
+  return s.replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* =========================================================
+   PETA
+   ========================================================= */
+var map = L.map('map', { zoomControl:false, minZoom:12, maxZoom:20 });
+L.control.zoom({ position:'topright' }).addTo(map);
+
+var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
+
+var boundsGroup = L.featureGroup();
+
+/* --- Roads --- */
+var namedFeatures = [];
+
+var roadsLayer = L.geoJSON(DATA_ROADS, {
+  style: function(feature){
+    var hw = feature.properties.highway;
+    return HIGHWAY_STYLE[hw] || { color:"#b9b09a", weight:1.5 };
+  },
+  onEachFeature: function(feature, layer){
+    layer.bindPopup(popupHTML(feature.properties, HIGHWAY_LABEL[feature.properties.highway]));
+    layer.on('mouseover', function(){ layer.setStyle({ weight: (layer.options.weight||2)+2, color:'#eee7d6' }); });
+    layer.on('mouseout', function(){ roadsLayer.resetStyle(layer); });
+    if (feature.properties.name){
+      namedFeatures.push({ name: feature.properties.name, tag: HIGHWAY_LABEL[feature.properties.highway] || feature.properties.highway, layer: layer, group:'roads' });
+    }
+  }
+}).addTo(map);
+boundsGroup.addLayer(roadsLayer);
+
+/* --- Buildings / POI polygons --- */
+var buildingsLayer = L.geoJSON(DATA_BUILDINGS, {
+  style: function(feature){
+    var a = feature.properties.amenity;
+    var c = AMENITY_COLOR[a] || "#b4623a";
+    return { color:"#12201a", weight:1.2, fillColor:c, fillOpacity:0.55 };
+  },
+  onEachFeature: function(feature, layer){
+    layer.bindPopup(popupHTML(feature.properties));
+    layer.on('mouseover', function(){ layer.setStyle({ fillOpacity:0.85 }); });
+    layer.on('mouseout', function(){ layer.setStyle({ fillOpacity:0.55 }); });
+    if (feature.properties.name){
+      namedFeatures.push({ name: feature.properties.name, tag: AMENITY_LABEL[feature.properties.amenity] || feature.properties.amenity, layer: layer, group:'buildings' });
+    }
+  }
+}).addTo(map);
+boundsGroup.addLayer(buildingsLayer);
+
+/* --- Points --- */
+var pointsLayer = L.geoJSON(DATA_POINTS, {
+  pointToLayer: function(feature, latlng){
+    var a = feature.properties.amenity;
+    var color = AMENITY_COLOR[a] || "#4d7690";
+    var icon = L.divIcon({
+      className: '',
+      html: '<div style="background:'+color+';width:26px;height:26px;border-radius:50% 50% 50% 4px;transform:rotate(45deg);border:2px solid #eee7d6;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.4);"><span style="transform:rotate(-45deg);font-size:13px;">'+(AMENITY_ICON[a]||'&#128205;')+'</span></div>',
+      iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-24]
+    });
+    return L.marker(latlng, { icon: icon });
+  },
+  onEachFeature: function(feature, layer){
+    layer.bindPopup(popupHTML(feature.properties));
+    if (feature.properties.name){
+      namedFeatures.push({ name: feature.properties.name, tag: AMENITY_LABEL[feature.properties.amenity] || feature.properties.amenity, layer: layer, group:'points' });
+    }
+  }
+}).addTo(map);
+boundsGroup.addLayer(pointsLayer);
+
+map.fitBounds(boundsGroup.getBounds().pad(0.08));
+
+/* =========================================================
+   TOGGLE LAYER
+   ========================================================= */
+var LAYER_MAP = { roads: roadsLayer, buildings: buildingsLayer, points: pointsLayer };
+document.querySelectorAll('.layer-row[data-layer] input').forEach(function(chk){
+  chk.addEventListener('change', function(e){
+    var key = e.target.closest('.layer-row').dataset.layer;
+    var layer = LAYER_MAP[key];
+    if (e.target.checked){ map.addLayer(layer); } else { map.removeLayer(layer); }
+  });
+});
+
+/* =========================================================
+   LEGEND DINAMIS
+   ========================================================= */
+function buildLegend(containerId, dict, colorDict, labelDict, isLine){
+  var el = document.getElementById(containerId);
+  var html = '';
+  Object.keys(dict).forEach(function(k){
+    if (!dict[k]) return;
+    var color = colorDict[k] || '#b9b09a';
+    var label = labelDict[k] || k;
+    html += '<div class="layer-row" style="font-size:11.5px;">' +
+      '<span class="swatch' + (isLine?' line':'') + '" style="background:'+color+'"></span>' +
+      '<span>' + label + '</span><span class="count">'+dict[k]+'</span></div>';
+  });
+  el.innerHTML = html;
+}
+
+function tally(features, key, transformKey){
+  var out = {};
+  features.forEach(function(f){
+    var v = f.properties[key];
+    if (!v) return;
+    out[v] = (out[v]||0) + 1;
+  });
+  return out;
+}
+
+var roadTally = tally(DATA_ROADS.features, 'highway');
+var roadColorForLegend = {};
+Object.keys(HIGHWAY_STYLE).forEach(function(k){ roadColorForLegend[k] = HIGHWAY_STYLE[k].color; });
+buildLegend('road-legend', roadTally, roadColorForLegend, HIGHWAY_LABEL, true);
+
+var buildingTally = tally(DATA_BUILDINGS.features, 'amenity');
+buildLegend('building-legend', buildingTally, AMENITY_COLOR, AMENITY_LABEL, false);
+
+var pointTally = tally(DATA_POINTS.features, 'amenity');
+buildLegend('point-legend', pointTally, AMENITY_COLOR, AMENITY_LABEL, false);
+
+document.getElementById('n-roads').textContent = DATA_ROADS.features.length;
+document.getElementById('n-buildings').textContent = DATA_BUILDINGS.features.length;
+document.getElementById('n-points').textContent = DATA_POINTS.features.length;
+document.getElementById('stat-roads').textContent = DATA_ROADS.features.length;
+document.getElementById('stat-buildings').textContent = DATA_BUILDINGS.features.length + DATA_POINTS.features.length;
+
+/* =========================================================
+   PENCARIAN
+   ========================================================= */
+var searchBox = document.getElementById('search-box');
+var searchResults = document.getElementById('search-results');
+
+searchBox.addEventListener('input', function(){
+  var q = searchBox.value.trim().toLowerCase();
+  searchResults.innerHTML = '';
+  if (q.length < 2) return;
+  var matches = namedFeatures.filter(function(f){ return f.name.toLowerCase().indexOf(q) > -1; }).slice(0, 12);
+  matches.forEach(function(m){
+    var item = document.createElement('div');
+    item.className = 'result-item';
+    item.innerHTML = '<span>' + m.name + '</span><span class="tag">' + (m.tag||'') + '</span>';
+    item.addEventListener('click', function(){
+      var b = m.layer.getBounds ? m.layer.getBounds() : L.latLngBounds([m.layer.getLatLng()]);
+      map.fitBounds(b.pad(0.5), { maxZoom: 18 });
+      setTimeout(function(){ m.layer.openPopup(); }, 300);
+      searchResults.innerHTML = '';
+      searchBox.value = m.name;
+    });
+    searchResults.appendChild(item);
+  });
+});
+
+/* =========================================================
+   GPS READOUT
+   ========================================================= */
+function updateGPS(latlng, zoom){
+  document.getElementById('gps-lat').textContent = latlng.lat.toFixed(5);
+  document.getElementById('gps-lon').textContent = latlng.lng.toFixed(5);
+  document.getElementById('gps-z').textContent = zoom;
+}
+map.on('mousemove', function(e){ updateGPS(e.latlng, map.getZoom()); });
+map.on('moveend zoomend', function(){ updateGPS(map.getCenter(), map.getZoom()); });
+updateGPS(map.getCenter(), map.getZoom());
+</script>
+</body>
+</html>
